@@ -45,6 +45,8 @@ public enum Errors implements ErrorCode {
   ELASTICSEARCH_18("Could not evaluate the time driver expression: {}"),
   ELASTICSEARCH_19("Document ID expression must be provided to use {} operation"),
   ELASTICSEARCH_20("Invalid Security user, it must be <USERNAME>:<PASSWORD>: '{}'"),
+  ELASTICSEARCH_21("Could not parse the parent ID template expression: {}"),
+  ELASTICSEARCH_22("Could not evaluate the parent ID template expression: {}"),
   ;
   private final String msg;
 

@@ -149,6 +149,18 @@ public class ElasticSearchConfigBean {
   public String docIdTemplate;
 
   @ConfigDef(
+          required = false,
+          type = ConfigDef.Type.STRING,
+          label = "Parent ID",
+          description = "An expression which evaluates to a document ID for the parent in a parent/child hierarchy.",
+          displayPosition = 85,
+          group = "ELASTIC_SEARCH",
+          elDefs = {RecordEL.class, DataUtilEL.class},
+          evaluation = ConfigDef.Evaluation.EXPLICIT
+  )
+  public String parentIdTemplate;
+
+  @ConfigDef(
       required = true,
       type = ConfigDef.Type.MODEL,
       defaultValue = "UTF-8",
