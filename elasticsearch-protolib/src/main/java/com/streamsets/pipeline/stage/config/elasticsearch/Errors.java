@@ -45,13 +45,14 @@ public enum Errors implements ErrorCode {
   ELASTICSEARCH_18("Could not evaluate the time driver expression: {}"),
   ELASTICSEARCH_19("Document ID expression must be provided to use {} operation"),
   ELASTICSEARCH_20("Invalid Security user, it must be <USERNAME>:<PASSWORD>: '{}'"),
-  // Origin
   ELASTICSEARCH_21("Could not find _scroll_id field in response to query."),
   ELASTICSEARCH_22("Failed to fetch batch: '{}'"),
   ELASTICSEARCH_23("Cursor expired, please Reset Origin and restart the pipeline."),
   ELASTICSEARCH_24("Offset field '{}' not found in parsed record."),
   ELASTICSEARCH_25("Incremental mode requires the query to contain ${OFFSET} in at least one field"),
   ELASTICSEARCH_26("Changing the parallelism from '{}' to '{}' slices requires resetting the origin as it recomputes shards."),
+  ELASTICSEARCH_27("Could not parse the parent ID template expression: {}"),
+  ELASTICSEARCH_28("Could not evaluate the parent ID template expression: {}"),
   ;
   private final String msg;
 

@@ -78,6 +78,7 @@ public class ElasticsearchTarget extends BaseTarget {
   private ELEval indexEval;
   private ELEval typeEval;
   private ELEval docIdEval;
+  private ELEval parentIdEval;
   private DataGeneratorFactory generatorFactory;
   private ErrorRecordHandler errorRecordHandler;
   private ElasticsearchStageDelegate delegate;
@@ -116,6 +117,7 @@ public class ElasticsearchTarget extends BaseTarget {
     indexEval = getContext().createELEval("indexTemplate");
     typeEval = getContext().createELEval("typeTemplate");
     docIdEval = getContext().createELEval("docIdTemplate");
+    parentIdEval = getContext().createELEval("parentIdTemplate");
     timeDriverEval = getContext().createELEval("timeDriver");
 
     try {
@@ -166,6 +168,16 @@ public class ElasticsearchTarget extends BaseTarget {
             )
         );
       }
+    }
+    if (!StringUtils.isEmpty(conf.parentIdTemplate)) {
+      validateEL(
+              typeEval,
+              conf.parentIdTemplate,
+              "elasticSearchConfig.docIdTemplate",
+              Errors.ELASTICSEARCH_04,
+              Errors.ELASTICSEARCH_05,
+              issues
+      );
     }
 
     delegate = new ElasticsearchStageDelegate(getContext(), conf);
@@ -229,8 +241,12 @@ public class ElasticsearchTarget extends BaseTarget {
         String index = getRecordIndex(elVars, record);
         String type = typeEval.eval(elVars, conf.typeTemplate, String.class);
         String id = null;
+        String parentId = null;
         if (!StringUtils.isEmpty(conf.docIdTemplate)) {
           id = docIdEval.eval(elVars, conf.docIdTemplate, String.class);
+        }
+        if (!StringUtils.isEmpty(conf.parentIdTemplate)) {
+          parentId = docIdEval.eval(elVars, conf.parentIdTemplate, String.class);
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataGenerator generator = generatorFactory.getGenerator(baos);
