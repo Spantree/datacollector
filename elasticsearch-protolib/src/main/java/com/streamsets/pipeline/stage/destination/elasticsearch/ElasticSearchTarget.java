@@ -100,6 +100,7 @@ public class ElasticSearchTarget extends BaseTarget {
   private ELEval typeEval;
   private ELEval docIdEval;
   private ELEval parentIdEval;
+  private ELEval routingEval;
   private DataGeneratorFactory generatorFactory;
   private ErrorRecordHandler errorRecordHandler;
   private RestClient restClient;
@@ -140,6 +141,7 @@ public class ElasticSearchTarget extends BaseTarget {
     typeEval = getContext().createELEval("typeTemplate");
     docIdEval = getContext().createELEval("docIdTemplate");
     parentIdEval = getContext().createELEval("parentIdTemplate");
+    routingEval = getContext().createELEval("routingTemplate");
     timeDriverEval = getContext().createELEval("timeDriver");
 
     try {
@@ -201,7 +203,16 @@ public class ElasticSearchTarget extends BaseTarget {
               issues
       );
     }
-
+    if (!StringUtils.isEmpty(conf.routingTemplate)) {
+      validateEL(
+              typeEval,
+              conf.routingTemplate,
+              ElasticSearchConfigBean.CONF_PREFIX + "routingTemplate",
+              Errors.ELASTICSEARCH_23,
+              Errors.ELASTICSEARCH_24,
+              issues
+      );
+    }
     if (conf.httpUris.isEmpty()) {
       issues.add(
           getContext().createConfigIssue(
@@ -406,6 +417,10 @@ public class ElasticSearchTarget extends BaseTarget {
         if (!StringUtils.isEmpty(conf.parentIdTemplate)) {
           parent = parentIdEval.eval(elVars, conf.parentIdTemplate, String.class);
         }
+        String routing = null;
+        if (!StringUtils.isEmpty(conf.routingTemplate)) {
+          routing = routingEval.eval(elVars, conf.routingTemplate, String.class);
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataGenerator generator = generatorFactory.getGenerator(baos);
         generator.write(record);
@@ -438,7 +453,7 @@ public class ElasticSearchTarget extends BaseTarget {
           // No header attribute set. Use default.
           opCode = conf.defaultOperation.code;
         }
-        bulkRequest.append(getOperation(index, type, id, parent, recordJson, opCode));
+        bulkRequest.append(getOperation(index, type, id, parent, routing, recordJson, opCode));
       } catch (IOException ex) {
         errorRecordHandler.onError(
             new OnRecordErrorException(
@@ -530,23 +545,23 @@ public class ElasticSearchTarget extends BaseTarget {
     }
   }
 
-  private String getOperation(String index, String type, String id, String parent, String record, int opCode) {
+  private String getOperation(String index, String type, String id, String parent, String routing, String record, int opCode) {
     StringBuilder op = new StringBuilder();
     switch (opCode) {
       case OperationType.UPSERT_CODE:
-        op.append(String.format("{\"index\":%s}%n", getOperationMetadata(index, type, id, parent)));
+        getOperationMetadata("index", index, type, id, parent, routing, op);
         op.append(String.format("%s%n", record));
         break;
       case OperationType.INSERT_CODE:
-        op.append(String.format("{\"create\":%s}%n", getOperationMetadata(index, type, id, parent)));
+        getOperationMetadata("create", index, type, id, parent, routing, op);
         op.append(String.format("%s%n", record));
         break;
       case OperationType.UPDATE_CODE:
-        op.append(String.format("{\"update\":%s}%n", getOperationMetadata(index, type, id, parent)));
+        getOperationMetadata("update", index, type, id, parent, routing, op);
         op.append(String.format("{\"doc\":%s}%n", record));
         break;
       case OperationType.DELETE_CODE:
-        op.append(String.format("{\"delete\":%s}%n", getOperationMetadata(index, type, id, parent)));
+        getOperationMetadata("delete", index, type, id, parent, routing, op);
         break;
       default:
         LOG.error("Operation {} not supported", opCode);
@@ -555,18 +570,19 @@ public class ElasticSearchTarget extends BaseTarget {
     return op.toString();
   }
 
-  private String getOperationMetadata(String index, String type, String id, String parent) {
-    String indexOp = String.format("{\"_index\":\"%s\",\"_type\":\"%s\"", index, type);
-    
+  private void getOperationMetadata(String operation, String index, String type, String id, String parent, String routing, StringBuilder sb) {
+    sb.append(String.format("{\"%s\":{\"_index\":\"%s\",\"_type\":\"%s\"", operation, index, type));
+
     if (!StringUtils.isEmpty(id)) {
-      indexOp += String.format(",\"_id\":\"%s\"", id);
+      sb.append(String.format(",\"_id\":\"%s\"", id));
     }
     if (!StringUtils.isEmpty(parent)) {
-      indexOp += String.format(",\"parent\":\"%s\"", parent);
+      sb.append(String.format(",\"parent\":\"%s\"", parent));
     }
-    indexOp += "}";
-
-    return indexOp;
+    if (!StringUtils.isEmpty(routing)) {
+      sb.append(String.format(",\"routing\":\"%s\"", routing));
+    }
+    sb.append("}}%n");
   }
 
   private Header getAuthenticationHeader() {

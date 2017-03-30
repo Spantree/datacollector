@@ -161,6 +161,18 @@ public class ElasticSearchConfigBean {
   public String parentIdTemplate;
 
   @ConfigDef(
+          required = false,
+          type = ConfigDef.Type.STRING,
+          label = "Routing",
+          description = "An expression which evaluates to a document ID whose shard will be indexed on.",
+          displayPosition = 87,
+          group = "ELASTIC_SEARCH",
+          elDefs = {RecordEL.class, DataUtilEL.class},
+          evaluation = ConfigDef.Evaluation.EXPLICIT
+  )
+  public String routingTemplate;
+
+  @ConfigDef(
       required = true,
       type = ConfigDef.Type.MODEL,
       defaultValue = "UTF-8",

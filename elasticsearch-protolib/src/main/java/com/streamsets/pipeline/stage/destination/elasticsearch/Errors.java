@@ -47,6 +47,8 @@ public enum Errors implements ErrorCode {
   ELASTICSEARCH_20("Invalid Security user, it must be <USERNAME>:<PASSWORD>: '{}'"),
   ELASTICSEARCH_21("Could not parse the parent ID template expression: {}"),
   ELASTICSEARCH_22("Could not evaluate the parent ID template expression: {}"),
+  ELASTICSEARCH_23("Could not parse the routing template expression: {}"),
+  ELASTICSEARCH_24("Could not evaluate the routing template expression: {}"),
   ;
   private final String msg;
 
