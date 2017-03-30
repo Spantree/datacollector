@@ -53,6 +53,8 @@ public enum Errors implements ErrorCode {
   ELASTICSEARCH_26("Changing the parallelism from '{}' to '{}' slices requires resetting the origin as it recomputes shards."),
   ELASTICSEARCH_27("Could not parse the parent ID template expression: {}"),
   ELASTICSEARCH_28("Could not evaluate the parent ID template expression: {}"),
+  ELASTICSEARCH_29("Could not parse the routing template expression: {}"),
+  ELASTICSEARCH_30("Could not evaluate the routing template expression: {}"),
   ;
   private final String msg;
 
