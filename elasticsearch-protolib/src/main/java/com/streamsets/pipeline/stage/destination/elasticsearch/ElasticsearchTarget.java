@@ -375,18 +375,17 @@ public class ElasticsearchTarget extends BaseTarget {
   }
 
   private String getOperationMetadata(String index, String type, String id, String parent) {
-    StringBuilder indexOp = new StringBuilder();
-
-    indexOp.append(String.format("{\"_index\":\"%s\",\"_type\":\"%s\"", index, type));
+    String indexOp = String.format("{\"_index\":\"%s\",\"_type\":\"%s\"", index, type);
+    
     if (!StringUtils.isEmpty(id)) {
-      indexOp.append(String.format(",\"_id\":\"%s\"", id));
+      indexOp += String.format(",\"_id\":\"%s\"", id);
     }
     if (!StringUtils.isEmpty(parent)) {
-      indexOp.append(String.format(",\"parent\":\"%s\"", parent));
+      indexOp += String.format(",\"parent\":\"%s\"", parent);
     }
-    indexOp.append("}");
+    indexOp += "}";
 
-    return indexOp.toString();
+    return indexOp;
   }
 
   private List<ErrorItem> extractErrorItems(JsonObject json) {
