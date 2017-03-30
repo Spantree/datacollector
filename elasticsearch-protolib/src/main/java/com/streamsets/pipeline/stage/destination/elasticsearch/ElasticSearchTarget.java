@@ -572,7 +572,6 @@ public class ElasticSearchTarget extends BaseTarget {
 
   private void getOperationMetadata(String operation, String index, String type, String id, String parent, String routing, StringBuilder sb) {
     sb.append(String.format("{\"%s\":{\"_index\":\"%s\",\"_type\":\"%s\"", operation, index, type));
-
     if (!StringUtils.isEmpty(id)) {
       sb.append(String.format(",\"_id\":\"%s\"", id));
     }
@@ -582,7 +581,7 @@ public class ElasticSearchTarget extends BaseTarget {
     if (!StringUtils.isEmpty(routing)) {
       sb.append(String.format(",\"routing\":\"%s\"", routing));
     }
-    sb.append("}}%n");
+    sb.append(String.format("}}%n"));
   }
 
   private Header getAuthenticationHeader() {
