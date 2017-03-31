@@ -196,19 +196,22 @@ public class ElasticSearchTargetIT {
   }
 
   private Target createTarget() {
-    return createTarget("");
+    return createTarget("", "", "");
   }
 
-  private Target createTarget(String docId) {
+  private Target createTarget(String docId, String parent, String routing) {
     return createTarget(
-        "${time:now()}",
-        "${record:value('/index')}",
-        docId,
-        ElasticSearchOperationType.INDEX
+            "${time:now()}",
+            "${record:value('/index')}",
+            docId,
+            ElasticSearchOperationType.INDEX,
+            parent,
+            routing
     );
   }
 
-  private ElasticSearchTarget createTarget(String timeDriver, String indexEL, String docIdEL, ElasticSearchOperationType op) {
+  private ElasticSearchTarget createTarget(String timeDriver, String indexEL, String docIdEL, ElasticSearchOperationType op,
+                                           String parent, String routing) {
     ElasticSearchConfigBean conf = new ElasticSearchConfigBean();
     conf.httpUris = Arrays.asList("127.0.0.1:" + esHttpPort);
     conf.timeDriver = timeDriver;
@@ -216,8 +219,8 @@ public class ElasticSearchTargetIT {
     conf.indexTemplate = indexEL;
     conf.typeTemplate = "${record:value('/type')}";
     conf.docIdTemplate = docIdEL;
-    conf.parentIdTemplate = "";
-    conf.routingTemplate = "";
+    conf.parentIdTemplate = parent;
+    conf.routingTemplate = routing;
     conf.charset = "UTF-8";
     conf.defaultOperation = op;
     conf.useSecurity = false;
@@ -369,7 +372,7 @@ public class ElasticSearchTargetIT {
 
   @Test
   public void testJsonParseError() throws Exception {
-    Target target = createTarget("${record:value('/index')}");
+    Target target = createTarget("${record:value('/index')}", "", "");
     TargetRunner runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target)
         .setOnRecordError(OnRecordError.TO_ERROR)
         .build();
@@ -434,10 +437,12 @@ public class ElasticSearchTargetIT {
   @Test
   public void testTimeDriverValue() throws Exception {
     ElasticSearchTarget target = createTarget(
-        "${record:value('/')}",
-        "${YYYY()}",
-        "",
-        ElasticSearchOperationType.INDEX
+            "${record:value('/')}",
+            "${YYYY()}",
+            "",
+            ElasticSearchOperationType.INDEX,
+            "",
+            ""
     );
     TargetRunner runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
     runner.runInit();
@@ -463,10 +468,12 @@ public class ElasticSearchTargetIT {
   @Test
   public void testWriteRecordsNow() throws Exception {
     ElasticSearchTarget target = createTarget(
-        "${time:now()}",
-        "${YYYY()}",
-        "",
-        ElasticSearchOperationType.INDEX
+            "${time:now()}",
+            "${YYYY()}",
+            "",
+            ElasticSearchOperationType.INDEX,
+            "",
+            ""
     );
     TargetRunner runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
     try {
@@ -578,10 +585,12 @@ public class ElasticSearchTargetIT {
   public void testUpsertRecords() throws Exception {
     // Use the index field as document ID.
     Target target = createTarget(
-        "${time:now()}",
-        "${record:value('/index')}",
-        "docId",
-        ElasticSearchOperationType.INDEX
+            "${time:now()}",
+            "${record:value('/index')}",
+            "docId",
+            ElasticSearchOperationType.INDEX,
+            "",
+            ""
     );
     TargetRunner runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
     try {
@@ -621,21 +630,7 @@ public class ElasticSearchTargetIT {
 
   @Test
   public void testParentIDAndRouting() throws Exception {
-    ElasticSearchConfigBean conf = new ElasticSearchConfigBean();
-    conf.httpUris = Arrays.asList("127.0.0.1:" + esHttpPort);
-    conf.timeDriver = "${time:now()}";
-    conf.timeZoneID = "UTC";
-    conf.indexTemplate = "${record:value('/index')}";
-    conf.typeTemplate = "${record:value('/type')}";
-    conf.docIdTemplate = "";
-    conf.parentIdTemplate = "${record:value('/parent')}";
-    conf.routingTemplate = "${record:value('/routing')}";
-    conf.charset = "UTF-8";
-    conf.defaultOperation = ElasticSearchOperationType.INDEX;
-    conf.useSecurity = false;
-    conf.securityConfigBean = new SecurityConfigBean();
-
-    ElasticSearchTarget target = new ElasticSearchTarget(conf);
+    Target target = createTarget("", "${record:value('/parent')}", "${record:value('/routing')}");
     TargetRunner runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
 
     // Create mappings for parent on the child type on index
