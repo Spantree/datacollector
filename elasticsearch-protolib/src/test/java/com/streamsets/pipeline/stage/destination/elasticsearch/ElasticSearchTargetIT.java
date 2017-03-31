@@ -37,6 +37,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.internal.InternalSettingsPreparer;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.transport.Netty4Plugin;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -120,6 +121,8 @@ public class ElasticSearchTargetIT {
     conf.indexTemplate = "${record:value('/index')x}";
     conf.typeTemplate = "${record:nonExistentFunction()}";
     conf.docIdTemplate = "";
+    conf.parentIdTemplate = "";
+    conf.routingTemplate = "";
     conf.charset = "UTF-8";
     conf.defaultOperation = ElasticSearchOperationType.INDEX;
     conf.useSecurity= false;
@@ -139,6 +142,8 @@ public class ElasticSearchTargetIT {
     conf.indexTemplate = "x";
     conf.typeTemplate = "x";
     conf.docIdTemplate = "";
+    conf.parentIdTemplate = "";
+    conf.routingTemplate = "";
     conf.charset = "UTF-8";
     conf.defaultOperation = ElasticSearchOperationType.INDEX;
     conf.useSecurity = false;
@@ -156,6 +161,8 @@ public class ElasticSearchTargetIT {
     conf.indexTemplate = "x";
     conf.typeTemplate = "x";
     conf.docIdTemplate = "";
+    conf.parentIdTemplate = "";
+    conf.routingTemplate = "";
     conf.charset = "UTF-8";
     conf.defaultOperation = ElasticSearchOperationType.INDEX;
     conf.useSecurity = false;
@@ -166,6 +173,26 @@ public class ElasticSearchTargetIT {
     issues = runner.runValidateConfigs();
     Assert.assertEquals(1, issues.size());
     Assert.assertTrue(issues.get(0).toString().contains(Errors.ELASTICSEARCH_09.name()));
+
+    conf.httpUris = Arrays.asList("localhost:9200");
+    conf.timeDriver = "${time:now()}";
+    conf.timeZoneID = "UTC";
+    conf.indexTemplate = "x";
+    conf.typeTemplate = "x";
+    conf.docIdTemplate = "";
+    conf.parentIdTemplate = "${record:value('/parent')x}";
+    conf.routingTemplate = "${record:nonExistentFunction()}";
+    conf.charset = "UTF-8";
+    conf.defaultOperation = ElasticSearchOperationType.INDEX;
+    conf.useSecurity = false;
+    conf.securityConfigBean = new SecurityConfigBean();
+
+    target = new ElasticSearchTarget(conf);
+    runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
+    issues = runner.runValidateConfigs();
+    Assert.assertEquals(2, issues.size());
+    Assert.assertTrue(issues.get(0).toString().contains(Errors.ELASTICSEARCH_21.name()));
+    Assert.assertTrue(issues.get(1).toString().contains(Errors.ELASTICSEARCH_24.name()));
   }
 
   private Target createTarget() {
@@ -189,6 +216,8 @@ public class ElasticSearchTargetIT {
     conf.indexTemplate = indexEL;
     conf.typeTemplate = "${record:value('/type')}";
     conf.docIdTemplate = docIdEL;
+    conf.parentIdTemplate = "";
+    conf.routingTemplate = "";
     conf.charset = "UTF-8";
     conf.defaultOperation = op;
     conf.useSecurity = false;
@@ -585,6 +614,73 @@ public class ElasticSearchTargetIT {
 
       Assert.assertEquals(expected, got);
 
+    } finally {
+      runner.runDestroy();
+    }
+  }
+
+  @Test
+  public void testParentIDAndRouting() throws Exception {
+    ElasticSearchConfigBean conf = new ElasticSearchConfigBean();
+    conf.httpUris = Arrays.asList("127.0.0.1:" + esHttpPort);
+    conf.timeDriver = "${time:now()}";
+    conf.timeZoneID = "UTC";
+    conf.indexTemplate = "${record:value('/index')}";
+    conf.typeTemplate = "${record:value('/type')}";
+    conf.docIdTemplate = "";
+    conf.parentIdTemplate = "${record:value('/parent')}";
+    conf.routingTemplate = "${record:value('/routing')}";
+    conf.charset = "UTF-8";
+    conf.defaultOperation = ElasticSearchOperationType.INDEX;
+    conf.useSecurity = false;
+    conf.securityConfigBean = new SecurityConfigBean();
+
+    ElasticSearchTarget target = new ElasticSearchTarget(conf);
+    TargetRunner runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
+
+    // Create mappings for parent on the child type on index
+    String mapping = "{ \"mappings\": { \"parent\": {}, \"child\": { \"_parent\": { \"type\": \"parent\" }}}}";
+    esServer.client().admin().indices().prepareCreate("i").setSource(mapping).execute().actionGet();
+
+    try {
+      runner.runInit();
+      Record record1 = RecordCreator.create();
+      record1.set(Field.create(ImmutableMap.of("index", Field.create("i"),
+              "type", Field.create("child"), "parent", Field.create("parent1"), "routing", Field.create("routing1"))));
+      Record record2 = RecordCreator.create();
+      record2.set(Field.create(ImmutableMap.of("index", Field.create("i"),
+              "type", Field.create("child"), "parent", Field.create("parent2"), "routing", Field.create(""))));
+      runner.runWrite(Arrays.asList(record1, record2));
+      Assert.assertTrue(runner.getErrorRecords().isEmpty());
+      Assert.assertTrue(runner.getErrors().isEmpty());
+
+      prepareElasticSearchServerForQueries();
+
+      Set<Map> expectedSource = new HashSet<Map>(Arrays.asList(
+              ImmutableMap.of("parent", "parent1", "routing", "routing1", "index", "i", "type", "child"),
+              ImmutableMap.of("parent", "parent2", "routing", "", "index", "i", "type", "child")
+      ));
+      SearchResponse response = esServer.client().prepareSearch("i").setTypes("child")
+              .setSearchType(SearchType.DEFAULT).execute().actionGet();
+      SearchHit[] hits = response.getHits().getHits();
+      Assert.assertEquals(2, hits.length);
+
+      Set<Map> actualSource = new HashSet<Map>(Arrays.asList(hits[0].getSource(), hits[1].getSource()));
+      Assert.assertEquals(expectedSource, actualSource);
+
+      Set<Map> actualFields = new HashSet<>();
+      for (SearchHit hit : hits) {
+        Map<String, String> fieldMap = new HashMap<>();
+        for (Map.Entry<String, SearchHitField> entry : hit.getFields().entrySet()) {
+          fieldMap.put(entry.getKey().toString(), entry.getValue().getValue().toString());
+        }
+        actualFields.add(fieldMap);
+      }
+      Set<Map> expectedFields = new HashSet<Map>(Arrays.asList(
+              ImmutableMap.of("_parent", "parent1", "_routing", "routing1"),
+              ImmutableMap.of("_parent", "parent2", "_routing", "parent2")
+      ));
+      Assert.assertEquals(expectedFields, actualFields);
     } finally {
       runner.runDestroy();
     }
