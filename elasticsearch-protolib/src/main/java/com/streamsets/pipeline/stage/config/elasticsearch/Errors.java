@@ -45,6 +45,7 @@ public enum Errors implements ErrorCode {
   ELASTICSEARCH_18("Could not evaluate the time driver expression: {}"),
   ELASTICSEARCH_19("Document ID expression must be provided to use {} operation"),
   ELASTICSEARCH_20("Invalid Security user, it must be <USERNAME>:<PASSWORD>: '{}'"),
+  // Origin
   ELASTICSEARCH_21("Could not find _scroll_id field in response to query."),
   ELASTICSEARCH_22("Failed to fetch batch: '{}'"),
   ELASTICSEARCH_23("Cursor expired, please Reset Origin and restart the pipeline."),

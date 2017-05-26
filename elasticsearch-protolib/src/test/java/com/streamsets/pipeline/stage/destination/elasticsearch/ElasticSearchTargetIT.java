@@ -30,7 +30,6 @@ import com.streamsets.pipeline.api.el.ELVars;
 import com.streamsets.pipeline.lib.el.RecordEL;
 import com.streamsets.pipeline.sdk.RecordCreator;
 import com.streamsets.pipeline.sdk.TargetRunner;
-import com.streamsets.pipeline.stage.config.elasticsearch.ElasticsearchConfig;
 import com.streamsets.pipeline.stage.config.elasticsearch.ElasticsearchTargetConfig;
 import com.streamsets.pipeline.stage.config.elasticsearch.Errors;
 import com.streamsets.pipeline.stage.config.elasticsearch.SecurityConfig;
@@ -147,8 +146,8 @@ public class ElasticSearchTargetIT extends ElasticsearchBaseIT {
     runner = new TargetRunner.Builder(ElasticSearchDTarget.class, target).build();
     issues = runner.runValidateConfigs();
     Assert.assertEquals(2, issues.size());
-    Assert.assertTrue(issues.get(0).toString().contains(Errors.ELASTICSEARCH_21.name()));
-    Assert.assertTrue(issues.get(1).toString().contains(Errors.ELASTICSEARCH_24.name()));
+    Assert.assertTrue(issues.get(0).toString().contains(Errors.ELASTICSEARCH_27.name()));
+    Assert.assertTrue(issues.get(1).toString().contains(Errors.ELASTICSEARCH_30.name()));
   }
 
   private Target createTarget() {
@@ -168,7 +167,7 @@ public class ElasticSearchTargetIT extends ElasticsearchBaseIT {
   private ElasticsearchTarget createTarget(String timeDriver, String indexEL, String docIdEL, ElasticsearchOperationType op,
                                            String parent, String routing) {
     ElasticsearchTargetConfig conf = new ElasticsearchTargetConfig();
-    conf.httpUris = Arrays.asList("127.0.0.1:" + esHttpPort);
+    conf.httpUris = Collections.singletonList("127.0.0.1:" + esHttpPort);
     conf.timeDriver = timeDriver;
     conf.timeZoneID = "UTC";
     conf.indexTemplate = indexEL;
