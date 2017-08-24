@@ -15,6 +15,7 @@
  */
 package com.streamsets.pipeline.stage.destination.s3;
 
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.amazonaws.util.StringUtils;
@@ -119,7 +120,11 @@ final class DefaultFileHelper extends FileHelper {
       // Avoid making a copy of the internal buffer maintained by the ByteArrayOutputStream by using
       // ByRefByteArrayOutputStream
       ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bOut.getInternalBuffer(), 0, bOut.size());
-      Upload upload = doUpload(bucket, fileName, byteArrayInputStream, getObjectMetadata());
+      ObjectMetadata objectMetadata = getObjectMetadata();
+      if (bOut.size() <= getMultipartUploadThreshold()) {
+        objectMetadata.setContentLength(bOut.size());
+      }
+      Upload upload = doUpload(bucket, fileName, byteArrayInputStream, objectMetadata);
       uploads.add(new UploadMetadata(
         upload,
         bucket,

@@ -104,6 +104,10 @@ abstract class FileHelper {
     return metadata;
   }
 
+  long getMultipartUploadThreshold() {
+    return transferManager.getConfiguration().getMultipartUploadThreshold();
+  }
+
   Upload doUpload(String bucket, String fileName, InputStream is, ObjectMetadata metadata) {
     final PutObjectRequest putObjectRequest = new PutObjectRequest(
         bucket,
