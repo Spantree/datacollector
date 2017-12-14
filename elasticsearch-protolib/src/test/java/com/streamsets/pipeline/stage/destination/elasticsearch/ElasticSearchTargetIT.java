@@ -673,12 +673,12 @@ public class ElasticSearchTargetIT extends ElasticsearchBaseIT {
       Map expected = ImmutableMap.builder().put("a", "New")  // field changed
               .put("existing", "not touched") // untouched fields left alone
               .put("nested", ImmutableMap.of( // can merge nested fields as well
-                 "one", "uno",        // nested and unchanged
-                 "two", "duo",       // nested and changed
-                 "three", "tres",    // nested and left alone
-                 "four", "quattour"  // nested new field added
+                 "one", "uno",                // nested and unchanged
+                 "two", "duo",                // nested and changed
+                 "three", "tres",             // nested and left alone
+                 "four", "quattour"           // nested new field added
               ))
-              .put("new", "fresh")           // new field added
+              .put("new", "fresh")            // new field added
               .put("index", "j")
               .put("type", "t").build();
 
