@@ -28,6 +28,7 @@ public class OperationType {
   public static final int UPSERT_CODE = 4;
   public static final int UNSUPPORTED_CODE = 5;
   public static final int UNDELETE_CODE = 6;
+  public static final int MERGE_CODE = 7;
 
   private static final Map<Integer, String> CODE_LABEL = new ImmutableMap.Builder<Integer, String>()
       .put(INSERT_CODE, "INSERT")
@@ -36,6 +37,7 @@ public class OperationType {
       .put(UPSERT_CODE, "UPSERT")
       .put(UNSUPPORTED_CODE, "UNSUPPORTED")
       .put(UNDELETE_CODE, "UNDELETE")
+      .put(MERGE_CODE, "MERGE")
       .build();
 
   private static final ImmutableMap<String, Integer> LABEL_CODE = new ImmutableMap.Builder<String, Integer>()
@@ -45,6 +47,7 @@ public class OperationType {
       .put("UPSERT", UPSERT_CODE)
       .put("UNSUPPORTED", UNSUPPORTED_CODE)
       .put("UNDELETE", UNDELETE_CODE)
+      .put("MERGE", MERGE_CODE)
       .build();
 
 
