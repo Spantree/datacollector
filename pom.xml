@@ -201,6 +201,7 @@
     <module>spark-executor-protolib</module>
     <module>spark-processor-protolib</module>
     <module>scripting-protolib</module>
+    <module>poi-protolib</module>
 
     <!--
          Stage libraries that always built with the data collector (they dont have protolibs)
@@ -299,6 +300,9 @@
             <exclude>**/*.desc</exclude>
             <exclude>**/*.proto</exclude>
             <exclude>**/*.md</exclude>
+            <exclude>**/*.xls</exclude>
+            <exclude>**/*.xlsx</exclude>
+            <exclude>**/*.properties</exclude>
 
             <!-- Protobuf generated files which are checked in for testing-->
             <exclude>commonlib/src/test/java/com/streamsets/pipeline/lib/util/EmployeeProto.java</exclude>
@@ -493,6 +497,7 @@
         <mapr_6_0-mep4-lib>mapr_6_0-mep4-lib</mapr_6_0-mep4-lib>
         <mapr_spark_2_1_mep_3_0-lib>mapr_spark_2_1_mep_3_0-lib</mapr_spark_2_1_mep_3_0-lib>
         <mongodb_3-lib>mongodb_3-lib</mongodb_3-lib>
+        <poi-lib>poi-lib</poi-lib>
       </properties>
       <modules>
         <!--
@@ -514,6 +519,7 @@
         <module>apache-kudu_1_5-lib</module>
         <module>apache-kudu_1_6-lib</module>
         <module>apache-kudu_1_7-lib</module>
+        <module>apache-poi_3_17-lib</module>
         <module>apache-solr_6_1_0-lib</module>
         <module>cassandra_3-lib</module>
         <module>cdh_5_2-lib</module>
