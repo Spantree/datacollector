@@ -21,7 +21,10 @@ import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.config.ExcelHeader;
 import com.streamsets.pipeline.lib.parser.AbstractDataParser;
 import com.streamsets.pipeline.lib.parser.DataParserException;
+import com.streamsets.pipeline.lib.parser.RecoverableDataParserException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -29,12 +32,16 @@ import org.apache.poi.ss.usermodel.Workbook;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.streamsets.pipeline.config.ExcelHeader.NO_HEADER;
+import static com.streamsets.pipeline.config.ExcelHeader.WITH_HEADER;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -46,6 +53,7 @@ public class WorkbookParser extends AbstractDataParser {
   private final ListIterator<Row> rowIterator;
   private String offset;
   private boolean eof;
+  private FormulaEvaluator evaluator;
 
   private HashMap<String, List<Field>> headers;
 
@@ -59,32 +67,30 @@ public class WorkbookParser extends AbstractDataParser {
     this.workbook = requireNonNull(workbook);
     this.rowIterator = iterate(this.workbook);
     this.offset = requireNonNull(offsetId);
+    this.evaluator = workbook.getCreationHelper().createFormulaEvaluator();
 
     if (!rowIterator.hasNext()) {
       throw new DataParserException(Errors.EXCEL_PARSER_04);
     }
 
-    switch (settings.getHeader()) {
-      case WITH_HEADER:
-        rowIterator.next();
-        headers = new HashMap<>();
-        for (Sheet sheet : workbook) {
-          List<Field> sheetHeaders = new ArrayList<>();
-          Row headerRow = sheet.getRow(0);
-          for (Cell cell : headerRow) {
-            sheetHeaders.add(Cells.parseCell(cell));
+    headers = new HashMap<>();
+    if (settings.getHeader() != NO_HEADER) {
+      // Advance past the header row in the stream of workbook rows
+      rowIterator.next();
+    }
+    if (settings.getHeader() == WITH_HEADER) {
+      for (Sheet sheet : workbook) {
+        List<Field> sheetHeaders = new ArrayList<>();
+        Row headerRow = sheet.getRow(0);
+        for (Cell cell : headerRow) {
+          try {
+            sheetHeaders.add(Cells.parseCell(cell, this.evaluator));
+          } catch (ExcelUnsupportedCellTypeException e) {
+            throw new DataParserException(Errors.EXCEL_PARSER_05, cell.getCellTypeEnum());
           }
-          headers.put(sheet.getSheetName(), sheetHeaders);
         }
-
-        break;
-      case IGNORE_HEADER:
-        Row ignored = rowIterator.next();
-        headers = new HashMap<>();
-        break;
-      case NO_HEADER:
-        headers = new HashMap<>();
-        break;
+        headers.put(sheet.getSheetName(), sheetHeaders);
+      }
     }
 
     Offsets.parse(offsetId).ifPresent(offset -> {
@@ -126,8 +132,7 @@ public class WorkbookParser extends AbstractDataParser {
     }
     offset = Offsets.offsetOf(currentRow);
     Record record = context.createRecord(offset);
-    LinkedHashMap<String, Field> rowMap = readRow(currentRow);
-    record.set(Field.createListMap(rowMap));
+    updateRecordWithCellValues(currentRow, record);
     return record;
   }
 
@@ -141,20 +146,28 @@ public class WorkbookParser extends AbstractDataParser {
     workbook.close();
   }
 
-  private LinkedHashMap<String, Field> readRow(Row row) throws DataParserException {
+  private void updateRecordWithCellValues(Row row, Record record) throws DataParserException {
     LinkedHashMap<String, Field> output = new LinkedHashMap<>();
     String sheetName = row.getSheet().getSheetName();
     String columnHeader;
+    Set<String> unsupportedCellTypes = new HashSet<>();
     for (int columnNum = 0; columnNum < row.getLastCellNum(); columnNum++) {
       if (headers.isEmpty()) {
         columnHeader = String.valueOf(columnNum);
-      }
-      else {
+      } else {
         columnHeader = headers.get(sheetName).get(columnNum).getValueAsString();
       }
       Cell cell = row.getCell(columnNum, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
-      output.put(columnHeader, Cells.parseCell(cell));
+      try {
+        output.put(columnHeader, Cells.parseCell(cell, this.evaluator));
+      } catch (ExcelUnsupportedCellTypeException e) {
+        output.put(columnHeader, Cells.parseCellAsString(cell));
+        unsupportedCellTypes.add(e.getCellType().name());
+      }
     }
-    return output;
+    record.set(Field.createListMap(output));
+    if (unsupportedCellTypes.size() > 0) {
+      throw new RecoverableDataParserException(record, Errors.EXCEL_PARSER_05, StringUtils.join(unsupportedCellTypes, ", "));
+    }
   }
 }

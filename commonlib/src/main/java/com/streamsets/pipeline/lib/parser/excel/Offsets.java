@@ -27,17 +27,13 @@ public class Offsets {
     return String.format("%s::%d", sheetName, rowNum);
   }
 
-  public static Optional<Offset> parse(String offset) {
+  public static Optional<Offset> parse(String offset) throws DataParserException {
     if (offset.equals("0")) {
       return Optional.empty();
     }
     String[] parts = offset.split("::");
     if (parts.length != 2) {
-      try {
-        throw new DataParserException(Errors.EXCEL_PARSER_01);
-      } catch (DataParserException e) {
-        e.printStackTrace();
-      }
+      throw new DataParserException(Errors.EXCEL_PARSER_06, offset);
     }
     String sheetName = parts[0];
     int rowNum = Integer.parseInt(parts[1]);

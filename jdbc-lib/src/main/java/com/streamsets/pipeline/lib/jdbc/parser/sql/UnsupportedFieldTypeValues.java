@@ -13,32 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.streamsets.pipeline.lib.websocket;
+package com.streamsets.pipeline.lib.jdbc.parser.sql;
 
-import com.streamsets.pipeline.api.ErrorCode;
-import com.streamsets.pipeline.api.GenerateResourceBundle;
+import com.streamsets.pipeline.api.Label;
 
-@GenerateResourceBundle
-public enum Errors implements ErrorCode {
-  WEB_SOCKET_01("Failed to connect : {}"),
-  WEB_SOCKET_02("Invalid Resource URI. Reason : {}"),
-  WEB_SOCKET_03("Error when disconnecting WebSocket Client. Reason: {}"),
-  WEB_SOCKET_04("Failed to send request data : {}"),
+public enum UnsupportedFieldTypeValues implements Label {
+  SEND_TO_PIPELINE("Send Record to Pipeline"),
+  TO_ERROR("Send Record To Error"),
+  DISCARD("Discard Record"),
   ;
 
-  private final String msg;
-  Errors(String msg) {
-    this.msg = msg;
-  }
+  private final String label;
 
+  UnsupportedFieldTypeValues(String label) {
+    this.label = label;
+  }
   @Override
-  public String getCode() {
-    return name();
+  public String getLabel() {
+    return label;
   }
-
-  @Override
-  public String getMessage() {
-    return msg;
-  }
-
 }
