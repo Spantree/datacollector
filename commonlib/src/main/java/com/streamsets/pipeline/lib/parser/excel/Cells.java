@@ -17,13 +17,21 @@
 package com.streamsets.pipeline.lib.parser.excel;
 
 import com.streamsets.pipeline.api.Field;
-import com.streamsets.pipeline.lib.parser.DataParserException;
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.jetbrains.annotations.NotNull;
+
+import java.math.BigDecimal;
 
 class Cells {
-  static Field parseCell(Cell cell) throws DataParserException {
+  static DataFormatter dataFormatter = new DataFormatter();
+
+  static Field parseCell(Cell cell, FormulaEvaluator evaluator) throws ExcelUnsupportedCellTypeException {
     CellType cellType = cell.getCellTypeEnum();
+//    set the cellType of a formula cell to its cached formula result type in order to process it as its result type
     if (cell.getCellTypeEnum().equals(CellType.FORMULA)) {
       cellType = cell.getCachedFormulaResultTypeEnum();
     }
@@ -31,13 +39,28 @@ class Cells {
       case STRING:
         return Field.create(cell.getStringCellValue());
       case NUMERIC:
-        return Field.create(cell.getNumericCellValue());
+        return parseNumericCell(cell, evaluator);
       case BOOLEAN:
         return Field.create(cell.getBooleanCellValue());
       case BLANK:
         return Field.create("");
       default:
-        throw new DataParserException(Errors.EXCEL_PARSER_05, cellType.toString());
+        throw new ExcelUnsupportedCellTypeException(cell, cellType);
+    }
+  }
+
+  static Field parseCellAsString(Cell cell) {
+    return Field.create(dataFormatter.formatCellValue(cell));
+  }
+
+  @NotNull
+  private static Field parseNumericCell(Cell cell, FormulaEvaluator evaluator) {
+    if (HSSFDateUtil.isCellDateFormatted(cell)) {
+      return Field.createDate(cell.getDateCellValue());
+    } else if (cell.getCellTypeEnum().equals(CellType.FORMULA)) {
+      return Field.create(new BigDecimal(evaluator.evaluate(cell).formatAsString()));
+    } else {
+      return Field.create(new BigDecimal(dataFormatter.formatCellValue(cell)));
     }
   }
 }

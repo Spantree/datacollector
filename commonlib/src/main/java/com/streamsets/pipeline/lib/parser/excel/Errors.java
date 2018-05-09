@@ -26,6 +26,8 @@ public enum Errors implements ErrorCode {
   EXCEL_PARSER_03("Encrypted document"),
   EXCEL_PARSER_04("Empty workbook"),
   EXCEL_PARSER_05("Unsupported cell type {}"),
+  EXCEL_PARSER_06("Error in offset format, expected SheetNumber::RowNumber, received {}"),
+  EXCEL_PARSER_07("No headers present when headers expected on Sheet {}"),
   ;
 
   private final String message;
