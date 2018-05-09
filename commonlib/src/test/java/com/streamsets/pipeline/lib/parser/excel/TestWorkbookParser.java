@@ -104,6 +104,21 @@ public class TestWorkbookParser {
   }
 
   @Test
+  public void testParseThrowsErrorForUnsupportedCellType() throws IOException, InvalidFormatException, DataParserException {
+    InputStream file = getFile("/excel/TestErrorCells.xlsx");
+    Workbook workbook = WorkbookFactory.create(file);
+    WorkbookParserSettings settings = WorkbookParserSettings.builder()
+        .withHeader(ExcelHeader.WITH_HEADER)
+        .build();
+
+    WorkbookParser parser = new WorkbookParser(settings, getContext(), workbook, "Sheet1::1");
+
+    exception.expect(DataParserException.class);
+    exception.expectMessage("EXCEL_PARSER_05 - Unsupported cell type ERROR");
+    Record firstRow = parser.parse();
+  }
+
+  @Test
   public void testParseCorrectlyHandlesFilesWithHeaders() throws IOException, InvalidFormatException, DataParserException {
     Workbook workbook = createWorkbook("/excel/TestExcel.xlsx");
 

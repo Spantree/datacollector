@@ -49,10 +49,6 @@ class Cells {
     }
   }
 
-  static Field parseCellAsString(Cell cell) {
-    return Field.create(dataFormatter.formatCellValue(cell));
-  }
-
   @NotNull
   private static Field parseNumericCell(Cell cell, FormulaEvaluator evaluator) {
     if (HSSFDateUtil.isCellDateFormatted(cell)) {
@@ -62,5 +58,9 @@ class Cells {
     } else {
       return Field.create(new BigDecimal(dataFormatter.formatCellValue(cell)));
     }
+  }
+
+  static Field parseCellAsString(Cell cell) {
+    return Field.create(dataFormatter.formatCellValue(cell));
   }
 }

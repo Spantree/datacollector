@@ -22,7 +22,7 @@ import com.streamsets.pipeline.config.ExcelHeader;
 import com.streamsets.pipeline.lib.parser.AbstractDataParser;
 import com.streamsets.pipeline.lib.parser.DataParserException;
 import com.streamsets.pipeline.lib.parser.RecoverableDataParserException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
@@ -129,7 +129,7 @@ public class WorkbookParser extends AbstractDataParser {
       return null;
     }
     Row currentRow = rowIterator.next();
-    if ((settings.getHeader() == ExcelHeader.WITH_HEADER || settings.getHeader() == ExcelHeader.IGNORE_HEADER)
+    if ((settings.getHeader() == WITH_HEADER || settings.getHeader() == ExcelHeader.IGNORE_HEADER)
         && currentRow.getRowNum() == 0) {
       currentRow = rowIterator.next();
     }
